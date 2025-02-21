@@ -1,0 +1,64 @@
+# Develop a ticket booking system with synchronized threads to ensure no double booking of seats. Use thread priorities to simulate VIP bookings being processed first.
+CODE:
+import java.util.ArrayList;
+import java.util.List;
+class TicketBookingSystem {
+    private List<Integer> availableSeats;
+
+    public TicketBookingSystem(int totalSeats) {
+        availableSeats = new ArrayList<>();
+        for (int i = 1; i <= totalSeats; i++) {
+            availableSeats.add(i);
+        }
+    }
+    public synchronized void bookSeat(String customerName) {
+        if (!availableSeats.isEmpty()) {
+            try {
+                Thread.sleep(50);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            int seat = availableSeats.remove(0);
+            System.out.println("Seat " + seat + " booked successfully for " + customerName + " by " + Thread.currentThread().getName());
+        } else {
+            System.out.println("No seats available for " + customerName + " by " + Thread.currentThread().getName());
+        }
+    }
+}
+class BookingThread extends Thread {
+    private TicketBookingSystem bookingSystem;
+    private String customerName;
+    public BookingThread(TicketBookingSystem bookingSystem, String customerName, int priority) {
+        this.bookingSystem = bookingSystem;
+        this.customerName = customerName;
+        setPriority(priority);
+    }
+    @Override
+    public void run() {
+        bookingSystem.bookSeat(customerName);
+    }
+}
+public class TicketBookingApp {
+    public static void main(String[] args) {
+        TicketBookingSystem bookingSystem = new TicketBookingSystem(5);
+        BookingThread vip1 = new BookingThread(bookingSystem, "VIP Customer 1", Thread.MAX_PRIORITY);
+        BookingThread vip2 = new BookingThread(bookingSystem, "VIP Customer 2", Thread.MAX_PRIORITY);
+        BookingThread reg1 = new BookingThread(bookingSystem, "Regular Customer 1", Thread.NORM_PRIORITY);
+        BookingThread reg2 = new BookingThread(bookingSystem, "Regular Customer 2", Thread.NORM_PRIORITY);
+        BookingThread reg3 = new BookingThread(bookingSystem, "Regular Customer 3", Thread.NORM_PRIORITY);
+        vip1.start();
+        vip2.start();
+        reg1.start();
+        reg2.start();
+        reg3.start();
+        try {
+            vip1.join();
+            vip2.join();
+            reg1.join();
+            reg2.join();
+            reg3.join();
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
+}
